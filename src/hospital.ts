@@ -112,6 +112,24 @@ export function waitingPatients(h: Hospital): WaitingPatient[] {
   );
 }
 
+export type WaitingWire = {
+  id: PatientId;
+  esi: Esi;
+  arrivedAt: Tick;
+  seq: number;
+  waitTicks: number;
+};
+
+export function waitingSnapshot(h: Hospital): WaitingWire[] {
+  return waitingPatients(h).map((p) => ({
+    id: p.id,
+    esi: p.esi,
+    arrivedAt: p.arrivedAt,
+    seq: p.seq,
+    waitTicks: h.tick - p.arrivedAt,
+  }));
+}
+
 export function esiCounts(h: Hospital): Record<Esi, number> {
   const counts: Record<Esi, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   for (const p of h.patients.values()) {

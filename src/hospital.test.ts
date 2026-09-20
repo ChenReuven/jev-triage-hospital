@@ -15,6 +15,7 @@ import {
   resetHospital,
   seat,
   waitingPatients,
+  waitingSnapshot,
 } from "./hospital";
 
 describe("createHospital", () => {
@@ -199,5 +200,20 @@ describe("resetHospital", () => {
     expect(waitingPatients(h).length).toBe(20);
     expect(h.patients.get(asPatientId("P21"))).toBeUndefined();
     expect(h.inFlight).toBe(null);
+  });
+});
+
+describe("waitingSnapshot", () => {
+  test("sends waitTicks as tick minus arrivedAt", () => {
+    const h = { ...createHospital(), tick: asTick(10) };
+    const snap = waitingSnapshot(h);
+    expect(snap).toHaveLength(20);
+    expect(snap[0]).toEqual({
+      id: "P01",
+      esi: 1,
+      arrivedAt: 0,
+      seq: 0,
+      waitTicks: 10,
+    });
   });
 });
