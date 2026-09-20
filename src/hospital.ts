@@ -258,3 +258,31 @@ export function applyReply(h: Hospital, reply: NextReply): Hospital {
   seated.lastPick = pick;
   return seated;
 }
+
+export function livingCount(h: Hospital): number {
+  let n = 0;
+  for (const p of h.patients.values()) {
+    if (p.status !== "done") n += 1;
+  }
+  return n;
+}
+
+export function injectCrash(h: Hospital): Hospital {
+  const id = asPatientId("P21");
+  if (h.patients.has(id) || livingCount(h) >= 21) return h;
+  const next = cloneHospital(h);
+  next.patients.set(id, {
+    status: "waiting",
+    id,
+    esi: 1,
+    arrivedAt: next.tick,
+    seq: 20,
+  });
+  return next;
+}
+
+export function resetHospital(h: Hospital): Hospital {
+  const next = createHospital();
+  next.epoch = h.epoch + 1;
+  return next;
+}

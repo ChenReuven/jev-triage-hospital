@@ -10,6 +10,9 @@ import {
   esiCounts,
   esiNext,
   firstEmptyRoom,
+  injectCrash,
+  livingCount,
+  resetHospital,
   seat,
   waitingPatients,
 } from "./hospital";
@@ -160,5 +163,41 @@ describe("applyReply", () => {
     expect(next.inFlight).toBe(null);
     expect(next.lastPick?.source).toBe("esi");
     expect(next.lastPick?.patientId).toBe("P01");
+  });
+});
+
+describe("injectCrash", () => {
+  test("adds P21 ESI-1 and esiNext returns P21", () => {
+    const h = injectCrash(createHospital());
+    expect(waitingPatients(h).length).toBe(21);
+    expect(h.patients.get(asPatientId("P21"))).toEqual({
+      status: "waiting",
+      id: "P21",
+      esi: 1,
+      arrivedAt: 0,
+      seq: 20,
+    });
+    h.patients.set(asPatientId("P01"), {
+      status: "done",
+      id: asPatientId("P01"),
+      esi: 1,
+    });
+    expect(esiNext(h)).toBe("P21");
+  });
+
+  test("is a no-op at 21 living or if P21 exists", () => {
+    const once = injectCrash(createHospital());
+    expect(livingCount(once)).toBe(21);
+    expect(injectCrash(once)).toBe(once);
+  });
+});
+
+describe("resetHospital", () => {
+  test("rebuilds the bag and bumps epoch", () => {
+    const h = resetHospital(injectCrash(createHospital()));
+    expect(h.epoch).toBe(1);
+    expect(waitingPatients(h).length).toBe(20);
+    expect(h.patients.get(asPatientId("P21"))).toBeUndefined();
+    expect(h.inFlight).toBe(null);
   });
 });
