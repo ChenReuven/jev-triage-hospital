@@ -98,6 +98,11 @@ injectBtn.addEventListener("click", () => {
   void dispatch();
 });
 
-render();
+function loop() {
+  render();
+  requestAnimationFrame(loop);
+}
+
+loop();
 startClock();
 void dispatch();

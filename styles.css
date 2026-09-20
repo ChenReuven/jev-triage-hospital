@@ -1,0 +1,75 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --line: #2d3a4f;
+  --text: #e8eef7;
+  --muted: #9aa8bc;
+  --accent: #60a5fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family:
+    "SF Pro Text",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background:
+    radial-gradient(circle at top, #1e293b 0%, var(--bg) 55%),
+    var(--bg);
+  color: var(--text);
+}
+
+.app {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.app h1 {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+#board {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0f1419;
+}
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.controls .btn {
+  flex: 1;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  background: var(--accent);
+  color: #0b1220;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.controls .btn:hover {
+  filter: brightness(1.05);
+}
+
+.controls .btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
