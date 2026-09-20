@@ -1,12 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import {
   advance,
+  applyReply,
   asPatientId,
   asTick,
+  beginPick,
   consultDuration,
   createHospital,
   esiCounts,
   esiNext,
+  firstEmptyRoom,
   seat,
   waitingPatients,
 } from "./hospital";
@@ -96,5 +99,53 @@ describe("advance", () => {
     const next = advance(early);
     expect(next.patients.get(asPatientId("P01"))?.status).toBe("in_room");
     expect(next.rooms[0]?.occupant).toBe("P01");
+  });
+});
+
+describe("beginPick", () => {
+  test("marks the first empty room in-flight", () => {
+    const h = beginPick(createHospital());
+    expect(firstEmptyRoom(createHospital())).toBe("R1");
+    expect(h.inFlight).toEqual({ roomId: "R1", epoch: 0 });
+  });
+});
+
+describe("applyReply", () => {
+  test("stale epoch leaves the hospital unseated", () => {
+    const inFlight = beginPick(createHospital());
+    const stale = { ...inFlight, epoch: 1 };
+    const next = applyReply(stale, {
+      ok: true,
+      patientId: asPatientId("P01"),
+      confidence: 0.9,
+      probabilities: { P01: 0.9 },
+    });
+    expect(next.rooms[0]?.occupant).toBe(null);
+    expect(next.patients.get(asPatientId("P01"))?.status).toBe("waiting");
+    expect(next.inFlight).toEqual({ roomId: "R1", epoch: 0 });
+  });
+
+  test("jev seat writes lastPick and fills R1", () => {
+    const next = applyReply(beginPick(createHospital()), {
+      ok: true,
+      patientId: asPatientId("P01"),
+      confidence: 0.81,
+      probabilities: { P01: 0.81, P02: 0.12 },
+    });
+    expect(next.rooms[0]?.occupant).toBe("P01");
+    expect(next.inFlight).toBe(null);
+    expect(next.lastPick).toEqual({
+      patientId: "P01",
+      source: "jev",
+      confidence: 0.81,
+      probabilities: { P01: 0.81, P02: 0.12 },
+    });
+  });
+
+  test("failed reply seats esiNext", () => {
+    const next = applyReply(beginPick(createHospital()), { ok: false });
+    expect(next.rooms[0]?.occupant).toBe("P01");
+    expect(next.lastPick?.source).toBe("esi");
+    expect(next.lastPick?.confidence).toBe(1);
   });
 });

@@ -196,3 +196,65 @@ export function advance(h: Hospital): Hospital {
   }
   return changed ? next : h;
 }
+
+export type NextReply =
+  | {
+      ok: true;
+      patientId: PatientId;
+      confidence: number;
+      probabilities: Record<string, number>;
+    }
+  | { ok: false };
+
+export function firstEmptyRoom(h: Hospital): RoomId | null {
+  for (const room of h.rooms) {
+    if (room.occupant === null) return room.id;
+  }
+  return null;
+}
+
+export function beginPick(h: Hospital): Hospital {
+  if (h.inFlight) return h;
+  const roomId = firstEmptyRoom(h);
+  if (!roomId || !esiNext(h)) return h;
+  const next = cloneHospital(h);
+  next.inFlight = { roomId, epoch: h.epoch };
+  return next;
+}
+
+export function applyReply(h: Hospital, reply: NextReply): Hospital {
+  if (!h.inFlight) return h;
+  if (h.inFlight.epoch !== h.epoch) return h;
+  const roomId = h.inFlight.roomId;
+  const next = cloneHospital(h);
+  next.inFlight = null;
+  const room = next.rooms.find((r) => r.id === roomId);
+  if (!room || room.occupant !== null) return next;
+
+  if (reply.ok) {
+    const candidate = next.patients.get(reply.patientId);
+    if (candidate?.status === "waiting") {
+      const pick: JevPick = {
+        patientId: reply.patientId,
+        source: "jev",
+        confidence: reply.confidence,
+        probabilities: reply.probabilities,
+      };
+      const seated = seat(next, reply.patientId, roomId, next.tick);
+      seated.lastPick = pick;
+      return seated;
+    }
+  }
+
+  const patientId = esiNext(next);
+  if (!patientId) return next;
+  const pick: JevPick = {
+    patientId,
+    source: "esi",
+    confidence: 1,
+    probabilities: { [patientId]: 1 },
+  };
+  const seated = seat(next, patientId, roomId, next.tick);
+  seated.lastPick = pick;
+  return seated;
+}
