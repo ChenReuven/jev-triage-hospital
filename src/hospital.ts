@@ -119,3 +119,35 @@ export function esiCounts(h: Hospital): Record<Esi, number> {
   }
   return counts;
 }
+
+export function consultDuration(esi: Esi): Tick {
+  switch (esi) {
+    case 1:
+      return asTick(80);
+    case 2:
+      return asTick(60);
+    case 3:
+      return asTick(40);
+    case 4:
+      return asTick(30);
+    case 5:
+      return asTick(20);
+    default: {
+      const _exhaustive: never = esi;
+      return _exhaustive;
+    }
+  }
+}
+
+export function esiNext(h: Hospital): PatientId | null {
+  const waiting = waitingPatients(h);
+  if (waiting.length === 0) {
+    return null;
+  }
+  waiting.sort((a, b) => {
+    if (a.esi !== b.esi) return a.esi - b.esi;
+    if (a.arrivedAt !== b.arrivedAt) return a.arrivedAt - b.arrivedAt;
+    return a.seq - b.seq;
+  });
+  return waiting[0].id;
+}
