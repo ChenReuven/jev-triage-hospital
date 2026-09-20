@@ -1,0 +1,121 @@
+export type PatientId = string & { readonly __brand: "PatientId" };
+export type RoomId = "R1" | "R2" | "R3";
+export type DoctorId = "D1" | "D2" | "D3";
+export type Tick = number & { readonly __brand: "Tick" };
+export type Esi = 1 | 2 | 3 | 4 | 5;
+
+export type WaitingPatient = {
+  status: "waiting";
+  id: PatientId;
+  esi: Esi;
+  arrivedAt: Tick;
+  seq: number;
+};
+
+export type InRoomPatient = {
+  status: "in_room";
+  id: PatientId;
+  esi: Esi;
+  arrivedAt: Tick;
+  seq: number;
+  roomId: RoomId;
+  consultEndsAt: Tick;
+};
+
+export type DonePatient = {
+  status: "done";
+  id: PatientId;
+  esi: Esi;
+};
+
+export type Patient = WaitingPatient | InRoomPatient | DonePatient;
+
+export type Room = { id: RoomId; occupant: PatientId | null };
+
+export type JevPick = {
+  patientId: PatientId;
+  source: "jev" | "esi";
+  confidence: number;
+  probabilities: Record<string, number>;
+};
+
+export type Hospital = {
+  tick: Tick;
+  patients: Map<PatientId, Patient>;
+  rooms: [Room, Room, Room];
+  lastPick: JevPick | null;
+  epoch: number;
+  inFlight: { roomId: RoomId; epoch: number } | null;
+};
+
+export const ROOM_IDS: readonly RoomId[] = ["R1", "R2", "R3"];
+
+export const DOCTORS: readonly { id: DoctorId; roomId: RoomId }[] = [
+  { id: "D1", roomId: "R1" },
+  { id: "D2", roomId: "R2" },
+  { id: "D3", roomId: "R3" },
+];
+
+const BAG_ESI: readonly Esi[] = [
+  1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
+];
+
+export function asPatientId(id: string): PatientId {
+  return id as PatientId;
+}
+
+export function asTick(n: number): Tick {
+  return n as Tick;
+}
+
+export function padPatientId(n: number): PatientId {
+  return asPatientId(`P${String(n).padStart(2, "0")}`);
+}
+
+export function cloneHospital(h: Hospital): Hospital {
+  return {
+    ...h,
+    patients: new Map(h.patients),
+    rooms: [{ ...h.rooms[0] }, { ...h.rooms[1] }, { ...h.rooms[2] }],
+  };
+}
+
+export function createHospital(): Hospital {
+  const patients = new Map<PatientId, Patient>();
+  BAG_ESI.forEach((esi, index) => {
+    const id = padPatientId(index + 1);
+    patients.set(id, {
+      status: "waiting",
+      id,
+      esi,
+      arrivedAt: asTick(0),
+      seq: index,
+    });
+  });
+  return {
+    tick: asTick(0),
+    patients,
+    rooms: [
+      { id: "R1", occupant: null },
+      { id: "R2", occupant: null },
+      { id: "R3", occupant: null },
+    ],
+    lastPick: null,
+    epoch: 0,
+    inFlight: null,
+  };
+}
+
+export function waitingPatients(h: Hospital): WaitingPatient[] {
+  return [...h.patients.values()].filter(
+    (p): p is WaitingPatient => p.status === "waiting",
+  );
+}
+
+export function esiCounts(h: Hospital): Record<Esi, number> {
+  const counts: Record<Esi, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const p of h.patients.values()) {
+    counts[p.esi] += 1;
+  }
+  return counts;
+}
