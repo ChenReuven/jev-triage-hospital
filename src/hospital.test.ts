@@ -148,4 +148,17 @@ describe("applyReply", () => {
     expect(next.lastPick?.source).toBe("esi");
     expect(next.lastPick?.confidence).toBe(1);
   });
+
+  test("unknown jev id seats esiNext and clears inFlight", () => {
+    const next = applyReply(beginPick(createHospital()), {
+      ok: true,
+      patientId: asPatientId("P99"),
+      confidence: 0.5,
+      probabilities: { P99: 0.5 },
+    });
+    expect(next.rooms[0]?.occupant).toBe("P01");
+    expect(next.inFlight).toBe(null);
+    expect(next.lastPick?.source).toBe("esi");
+    expect(next.lastPick?.patientId).toBe("P01");
+  });
 });
