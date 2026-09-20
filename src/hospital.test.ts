@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   asPatientId,
+  asTick,
   consultDuration,
   createHospital,
   esiCounts,
   esiNext,
+  seat,
   waitingPatients,
 } from "./hospital";
 
@@ -46,5 +48,30 @@ describe("esiNext", () => {
       esi: 1,
     });
     expect(esiNext(h)).toBe("P02");
+  });
+});
+
+describe("seat", () => {
+  test("moves a waiting patient into a room with consultEndsAt", () => {
+    const h = seat(createHospital(), asPatientId("P01"), "R1", asTick(0));
+    const p = h.patients.get(asPatientId("P01"));
+    expect(p).toEqual({
+      status: "in_room",
+      id: "P01",
+      esi: 1,
+      arrivedAt: 0,
+      seq: 0,
+      roomId: "R1",
+      consultEndsAt: 80,
+    });
+    expect(h.rooms[0]?.occupant).toBe("P01");
+    expect(waitingPatients(h).length).toBe(19);
+  });
+
+  test("second seat of the same id is a no-op", () => {
+    const once = seat(createHospital(), asPatientId("P01"), "R1", asTick(0));
+    const twice = seat(once, asPatientId("P01"), "R2", asTick(0));
+    expect(twice).toBe(once);
+    expect(twice.rooms[1]?.occupant).toBe(null);
   });
 });

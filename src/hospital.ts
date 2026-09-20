@@ -139,6 +139,33 @@ export function consultDuration(esi: Esi): Tick {
   }
 }
 
+export function seat(
+  h: Hospital,
+  patientId: PatientId,
+  roomId: RoomId,
+  tick: Tick,
+): Hospital {
+  const patient = h.patients.get(patientId);
+  const room = h.rooms.find((r) => r.id === roomId);
+  if (!patient || patient.status !== "waiting" || !room || room.occupant !== null) {
+    return h;
+  }
+  const next = cloneHospital(h);
+  next.tick = tick;
+  next.patients.set(patientId, {
+    status: "in_room",
+    id: patientId,
+    esi: patient.esi,
+    arrivedAt: patient.arrivedAt,
+    seq: patient.seq,
+    roomId,
+    consultEndsAt: asTick(tick + consultDuration(patient.esi)),
+  });
+  const roomIndex = ROOM_IDS.indexOf(roomId);
+  next.rooms[roomIndex] = { id: roomId, occupant: patientId };
+  return next;
+}
+
 export function esiNext(h: Hospital): PatientId | null {
   const waiting = waitingPatients(h);
   if (waiting.length === 0) {
