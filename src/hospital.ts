@@ -178,3 +178,21 @@ export function esiNext(h: Hospital): PatientId | null {
   });
   return waiting[0].id;
 }
+
+export function advance(h: Hospital): Hospital {
+  let changed = false;
+  const next = cloneHospital(h);
+  for (const patient of [...next.patients.values()]) {
+    if (patient.status !== "in_room") continue;
+    if (patient.consultEndsAt > h.tick) continue;
+    next.patients.set(patient.id, {
+      status: "done",
+      id: patient.id,
+      esi: patient.esi,
+    });
+    const roomIndex = ROOM_IDS.indexOf(patient.roomId);
+    next.rooms[roomIndex] = { id: patient.roomId, occupant: null };
+    changed = true;
+  }
+  return changed ? next : h;
+}

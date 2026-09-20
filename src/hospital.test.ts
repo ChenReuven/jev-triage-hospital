@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  advance,
   asPatientId,
   asTick,
   consultDuration,
@@ -73,5 +74,27 @@ describe("seat", () => {
     const twice = seat(once, asPatientId("P01"), "R2", asTick(0));
     expect(twice).toBe(once);
     expect(twice.rooms[1]?.occupant).toBe(null);
+  });
+});
+
+describe("advance", () => {
+  test("discharges at consultEndsAt and clears the room", () => {
+    let h = seat(createHospital(), asPatientId("P01"), "R1", asTick(0));
+    h = { ...h, tick: asTick(80) };
+    h = advance(h);
+    expect(h.patients.get(asPatientId("P01"))).toEqual({
+      status: "done",
+      id: "P01",
+      esi: 1,
+    });
+    expect(h.rooms[0]?.occupant).toBe(null);
+  });
+
+  test("does nothing before consultEndsAt", () => {
+    const seated = seat(createHospital(), asPatientId("P01"), "R1", asTick(0));
+    const early = { ...seated, tick: asTick(79) };
+    const next = advance(early);
+    expect(next.patients.get(asPatientId("P01"))?.status).toBe("in_room");
+    expect(next.rooms[0]?.occupant).toBe("P01");
   });
 });
