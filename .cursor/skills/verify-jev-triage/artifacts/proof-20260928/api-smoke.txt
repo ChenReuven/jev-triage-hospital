@@ -1,0 +1,1 @@
+verify-jev-triage api-smoke: OK patientId=P01

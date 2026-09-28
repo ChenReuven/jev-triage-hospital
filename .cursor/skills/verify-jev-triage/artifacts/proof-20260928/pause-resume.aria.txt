@@ -1,0 +1,4 @@
+After clicking Pause:
+- button name: Resume (was Pause)
+- heading: Jev triage
+- url: http://127.0.0.1:3010/
